@@ -160,36 +160,45 @@ santarem = santarem['2002':'2006']
 observed_data = santarem.values
 
 # Define the PyMC3 model
-with pm.Model() as model:
-    # Priors for the parameters
-    tminmin = pm.Uniform('tminmin', lower=None, upper=8)
-    tminmax = pm.Uniform('tminmax', lower=9, upper=None)
-    vpdmin = pm.Uniform('vpdmin', lower=None, upper=30000)
-    vpdmax = pm.Uniform('vpdmax', lower=1000, upper=None)
-    epsilonj = pm.Uniform('epsilonj', lower=None, upper=1)
+# Dados observados (exemplo fictício)
+observed_data = santarem.values
 
-    pm.Potential('tminmin_constraint', pm.math.switch(tminmin >= tminmax, -np.inf, 0))
+# Definindo o modelo no PyMC
+with pm.Model() as model:
+    # Priors para os parâmetros
+    tminmin = pm.Uniform('tminmin', lower=-300, upper=8)
+    tminmax = pm.Uniform('tminmax', lower=9, upper=300)
+    vpdmin = pm.Uniform('vpdmin', lower=50, upper=5000)
+    vpdmax = pm.Uniform('vpdmax', lower=1000, upper=10000)
+    epsilonj = pm.Uniform('epsilonj', lower=1e-6, upper=1)
+
+    # Adicionando restrições usando pm.Potential
     pm.Potential('vpdmin_constraint', pm.math.switch(vpdmin >= vpdmax, -np.inf, 0))
     
     params = [epsilonj, tminmin, tminmax, vpdmin, vpdmax]
-
-    # Predictions
-    predictions = gpp_calc(params, drivers_santarem[0][:len(gpp_santarem.index)],
-                           drivers_santarem[1][:len(gpp_santarem.index)],
-                           drivers_santarem[2][:len(gpp_santarem.index)],
-                           drivers_santarem[3][:len(gpp_santarem.index)])
-
-    # Calculate RMSE
+    # Previsões
+    predictions = gpp_calc(params, drivers_santarem[0][:len(gpp_santarem.index)], drivers_santarem[1][:len(gpp_santarem.index)], drivers_santarem[2][:len(gpp_santarem.index)], drivers_santarem[3][:len(gpp_santarem.index)])
+       
+    # Calculando o RMSE
     rmse = pm.math.sqrt(pm.math.sum((predictions - observed_data) ** 2) / predictions.shape[0])
 
-    # Likelihood (assuming normal distribution for the error)
+    # Verossimilhança (assumindo uma distribuição normal para o erro)
     likelihood = pm.Normal('likelihood', mu=predictions, sigma=rmse, observed=observed_data)
-
-    # Sampling using NUTS (No-U-Turn Sampler)
-    trace = pm.sample(5000, tune=1000, return_inferencedata=True)
-
-    # Find the Maximum A Posteriori (MAP) estimate
+    
+    # Amostragem utilizando NUTS (No-U-Turn Sampler)
+    trace = pm.sample(5000, tune=500, return_inferencedata=True)
+    
+    # Encontrar o ponto de máxima verossimilhança (MAP - Maximum A Posteriori)
     map_estimate = pm.find_MAP()
+
+# Análise dos resultados
+print("Estimativa MAP para tminmin:", map_estimate['tminmin'])
+print("Estimativa MAP para tminmax:", map_estimate['tminmax'])
+print("Estimativa MAP para vpdmin:", map_estimate['vpdmin'])
+print("Estimativa MAP para vpdmax:", map_estimate['vpdmax'])
+print("Estimativa MAP para epsilonj:", map_estimate['epsilonj'])
+
+trace.to_netcdf('trace.nc')
 
 # Analysis of results
 print("MAP estimate for tminmin:", map_estimate['tminmin'])
