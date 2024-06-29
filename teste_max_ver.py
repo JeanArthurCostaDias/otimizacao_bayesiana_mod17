@@ -214,6 +214,3 @@ new_gpp = gpp_calc_normal(new_params, drivers_santarem[0][:len(gpp_santarem.inde
                           drivers_santarem[2][:len(gpp_santarem.index)],
                           drivers_santarem[3][:len(gpp_santarem.index)])
 print("RMSE for updated parameters:", mean_squared_error(observed_data, new_gpp, squared=False))
-
-# Plot trace of the MCMC sampling
-az.plot_trace(trace)
