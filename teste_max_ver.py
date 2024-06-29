@@ -186,7 +186,7 @@ with pm.Model() as model:
     likelihood = pm.Normal('likelihood', mu=predictions, sigma=rmse, observed=observed_data)
     
     # Amostragem utilizando NUTS (No-U-Turn Sampler)
-    trace = pm.sample(5000, tune=500, return_inferencedata=True)
+    trace = pm.sample(10000, tune=2500, return_inferencedata=True)
     
     # Encontrar o ponto de máxima verossimilhança (MAP - Maximum A Posteriori)
     map_estimate = pm.find_MAP()
