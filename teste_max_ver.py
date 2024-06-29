@@ -162,12 +162,15 @@ observed_data = santarem.values
 # Define the PyMC3 model
 with pm.Model() as model:
     # Priors for the parameters
-    tminmin = pm.Uniform('tminmin', lower=-30, upper=8)
-    tminmax = pm.Uniform('tminmax', lower=9, upper=50)
-    vpdmin = pm.Uniform('vpdmin', lower=50, upper=1000)
-    vpdmax = pm.Uniform('vpdmax', lower=1000, upper=7000)
-    epsilonj = pm.Uniform('epsilonj', lower=1e-6, upper=1)
+    tminmin = pm.Uniform('tminmin', lower=None, upper=8)
+    tminmax = pm.Uniform('tminmax', lower=9, upper=None)
+    vpdmin = pm.Uniform('vpdmin', lower=None, upper=30000)
+    vpdmax = pm.Uniform('vpdmax', lower=1000, upper=None)
+    epsilonj = pm.Uniform('epsilonj', lower=None, upper=1)
 
+    pm.Potential('tminmin_constraint', pm.math.switch(tminmin >= tminmax, -np.inf, 0))
+    pm.Potential('vpdmin_constraint', pm.math.switch(vpdmin >= vpdmax, -np.inf, 0))
+    
     params = [epsilonj, tminmin, tminmax, vpdmin, vpdmax]
 
     # Predictions
@@ -183,7 +186,7 @@ with pm.Model() as model:
     likelihood = pm.Normal('likelihood', mu=predictions, sigma=rmse, observed=observed_data)
 
     # Sampling using NUTS (No-U-Turn Sampler)
-    trace = pm.sample(5000, tune=500, return_inferencedata=True)
+    trace = pm.sample(5000, tune=1000, return_inferencedata=True)
 
     # Find the Maximum A Posteriori (MAP) estimate
     map_estimate = pm.find_MAP()
